@@ -1,17 +1,20 @@
 """
-@project_name: Robot Collection - Project 02: Fidget
+@file     fidget.py
+@author   Phi Luu
+@date     July 13, 2017
 
-@file_name: fidget.py
+@brief    Robot Collection - Project 02: Fidget
 
-@description: Controls the robot by combining this with Arduino code to form
-an I2C interface. In the I2C connection, this is the master.
+@section  DESCRIPTION
 
-@compatibility: Raspberry Pi 3 Model B
+This robot is a computer keyboard controlled robot which can run, turn a
+camera, and avoid obstacles. This robot is inspired by and has the same
+chassis as the GoPiGo robot of Dexter Industries.
 
-@author: Phi Luu
-@location: Corvallis, Oregon, United States
-@created: July 13, 2017
-@updated: October 14, 2017
+This program is the "master" end of the I2C connection between a Raspberry
+Pi and an Arduino UNO. It helps connect the robot with the computer through
+Wi-Fi. It also transmits keyboard inputs into signal throughout the I2C
+connection.
 """
 
 import sys

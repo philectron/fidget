@@ -1,14 +1,20 @@
 /**
- * Project Name: Robot Collection - Project 02: Fidget
+ * @file     fidget.ino
+ * @author   Phi Luu
+ * @date     July 13, 2017
  *
- * File Name: fidget.ino
+ * @brief    Robot Collection - Project 02: Fidget
  *
- * Description:
+ * @section  DESCRIPTION
  *
- * Author: Phi Luu
- * Location: Portland, Oregon, United States
- * Created: July 13, 2017
- * Updated: September 13, 2017
+ * This robot is a computer keyboard controlled robot which can run, turn
+ * camera, and avoid obstacles. This robot is inspired by and has the same
+ * chassis as the GoPiGo robot of Dexter Industries.
+ *
+ * This program is the "slave" end of the I2C connection between a Raspberry
+ * Pi and an Arduino UNO. It receives the I2C signals and control the motors
+ * in order to make the robot move. It also utilizes the sonic sensor to help
+ * the robot avoid obstacles.
  */
 
 #include <Servo.h>
