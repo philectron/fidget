@@ -30,28 +30,28 @@
 #define KEYBOARD_E       6
 
 // Pinout
-const byte SONIC_TRIG  = 7;
-const byte SONIC_ECHO  = 8;
-const byte SERVO       = 9;
+const byte SONIC_TRIG = 7;
+const byte SONIC_ECHO = 8;
+const byte SERVO = 9;
 const byte RIGHT_MOTOR = 10;
-const byte LEFT_MOTOR  = 11;
+const byte LEFT_MOTOR = 11;
 
 // constants
 const unsigned int BAUD_RATE = 9600;
-const byte POWER             = 191;
+const byte POWER = 191;
 const unsigned int WAIT_TIME = 100;
 
 // global variables
-byte input_int  = 0;
+byte input_int = 0;
 byte output_int = 0;
 
 void setup() {
     // set modes for pins
-    pinMode(SONIC_TRIG,  OUTPUT);
-    pinMode(SONIC_ECHO,  INPUT);
-    pinMode(SERVO,       OUTPUT);
+    pinMode(SONIC_TRIG, OUTPUT);
+    pinMode(SONIC_ECHO, INPUT);
+    pinMode(SERVO, OUTPUT);
     pinMode(RIGHT_MOTOR, OUTPUT);
-    pinMode(LEFT_MOTOR,  OUTPUT);
+    pinMode(LEFT_MOTOR, OUTPUT);
 
     // start the serial monitor
     Serial.begin(BAUD_RATE);
@@ -109,33 +109,33 @@ void SendData(void) {
 
 void Stop(void) {
     analogWrite(RIGHT_MOTOR, 0);
-    analogWrite(LEFT_MOTOR,  0);
+    analogWrite(LEFT_MOTOR, 0);
 }
 
 void MoveForward(void) {
     Stop();
     delay(WAIT_TIME);
     analogWrite(RIGHT_MOTOR, POWER);
-    analogWrite(LEFT_MOTOR,  POWER);
+    analogWrite(LEFT_MOTOR, POWER);
 }
 
 void MoveBackward(void) {
     Stop();
     delay(WAIT_TIME);
     analogWrite(RIGHT_MOTOR, -POWER);
-    analogWrite(LEFT_MOTOR,  -POWER);
+    analogWrite(LEFT_MOTOR, -POWER);
 }
 
 void TurnLeft(void) {
     Stop();
     delay(WAIT_TIME);
     analogWrite(RIGHT_MOTOR, POWER);
-    analogWrite(LEFT_MOTOR,  -POWER);
+    analogWrite(LEFT_MOTOR, -POWER);
 }
 
 void TurnRight(void) {
     Stop();
     delay(WAIT_TIME);
     analogWrite(RIGHT_MOTOR, -POWER);
-    analogWrite(LEFT_MOTOR,  POWER);
+    analogWrite(LEFT_MOTOR, POWER);
 }
