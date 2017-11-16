@@ -7,8 +7,14 @@
 
 @section  DESCRIPTION
 
-This robot is a computer keyboard controlled robot that is capable of running on
-wheels, recording videos, and avoiding obstacles.
+This robot is a computer keyboard controlled robot which can run, turn a
+camera, and avoid obstacles. This robot is inspired by and has the same
+chassis as the GoPiGo robot of Dexter Industries.
+
+This program is the "master" end of the I2C connection between a Raspberry
+Pi and an Arduino UNO. It helps connect the robot with the computer through
+Wi-Fi. It also transmits keyboard inputs into signal throughout the I2C
+connection.
 """
 
 import sys
@@ -16,7 +22,15 @@ import termios
 import time
 import tty
 
-from picamera import PiCamera
+import smbus
+
+# from picamera import PiCamera
+
+SLAVE_ADDRESS = 0x04
+
+i2c = smbus.SMBus(1)
+
+# camera = PiCamera()
 
 
 def get_keyboard_input():
@@ -42,61 +56,83 @@ def get_keyboard_input():
     return ch
 
 
+def i2c_write(value):
+    """
+    Writes data to slave in the I2C connection.
+
+    Args:
+        value: an integer.
+
+    Returns:
+        -1 if fail to write.
+         Otherwise, returns nothing.
+    """
+    i2c.write_byte(SLAVE_ADDRESS, value)
+
+    return -1
+
+
+def i2c_read():
+    """
+    Reads data from slave in the I2C connection.
+
+    Returns:
+        An integer read from the slave.
+    """
+    data = i2c.read_byte_data(SLAVE_ADDRESS, 1)
+
+    return data
+
+
+def print_instruction():
+    """
+    Prints the instructions to control the robot.
+
+    Returns nothing.
+    """
+    print('Program is running.\n')
+    print('Press W to move forward.')
+    print('Press A to turn left.')
+    print('Press S to move backward.')
+    print('Press D to turn right.')
+    print('Press Q to rotate camera to the left.')
+    print('Press E to rotate camera to the right.\n')
+
+
 """main"""
 try:
-    # print instructions
-    print('Program started.\n')
-    print('W: move forward')
-    print('S: move backward')
-    print('A: steer left')
-    print('D: steer right')
-    print('Q: turn camera left')
-    print('E: turn camera right\n')
-
-    # turn off all motors
-    # TODO
-
-    # start the camera
-    camera = PiCamera()
-    camera.start_preview()
+    print_instruction()
+    # camera.start_preview()
+    # a list of valid keys for the robot
+    VALID_KEYS = 'wasdqeWASDQE'
+    # convert keyboard input to a number
+    KEY_TO_INT = {'w': 1, 'a': 2, 's': 3, 'd': 4, 'q': 5, 'e': 6}
+    # convert number to a feedback from slave
+    INT_TO_KEY = [
+        'STOPPED.', 'MOVING FORWARD.', 'TURNING LEFT.',
+        'MOVING BACKWARD.', 'TURNING RIGHT.'
+    ]
 
     while True:
-        # get keyboard input
-        keypress = get_keyboard_input().lower()[0]
+        # init and get input from keyboard
+        user_input = get_keyboard_input()
 
-        # move forward if w is pressed
-        if keypress == 'w':
-            # TODO
+        # convert from user's input (string) to an integer
+        if (user_input in VALID_KEYS) and (len(user_input) == 1):
+            user_input = user_input.lower()
+            input_int = KEY_TO_INT[user_input]
+        else:
+            input_int = 0
 
-        # move backward if s is pressed
-        if keypress == 's':
-            # TODO
+        # write the corresponding integer to the slave
+        i2c_write(input_int)
+        print('%d has been written to slave.' % (input_int))
 
-        # steer left if a is pressed
-        if keypress == 'a':
-            # TODO
+        # cool down
+        time.sleep(1)
 
-        # steer right if d is pressed
-        if keypress == 'd':
-            # TODO
-
-        # turn camera to the left if q is pressed
-        if keypress == 'q':
-            # TODO
-
-        # turn camera to the right if e is pressed
-        if keypress == 'e':
-            # TODO
-
-        # clean up keypress and get ready for the next input
-        keypress = ''
-
+        # read status from the slave
+        print('Has just read from slave: ' + INT_TO_KEY[i2c_read()])
 except KeyboardInterrupt:
-    # clean up gpio
-    # TODO
-
-    # stop camera
-    camera.stop_preview()
-
-    # print ending message
-    print('\nProgram ended.')
+    # camera.stop_preview()
+    print('\nProgram has been terminated.')
