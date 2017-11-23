@@ -20,122 +20,201 @@
 #include <Servo.h>
 #include <Wire.h>
 
-#define SLAVE_ADDRESS    0x04
-#define KEYBOARD_STOP    0
-#define KEYBOARD_W       1
-#define KEYBOARD_A       2
-#define KEYBOARD_S       3
-#define KEYBOARD_D       4
-#define KEYBOARD_Q       5
-#define KEYBOARD_E       6
+#define SLAVE_ADDRESS           0x04
+#define KEYBOARD_STOP           0
+#define KEYBOARD_FORWARD        1
+#define KEYBOARD_STEER_LEFT     2
+#define KEYBOARD_BACKWARD       3
+#define KEYBOARD_STEER_RIGHT    4
+#define KEYBOARD_TURN_LEFT      5
+#define KEYBOARD_TURN_RIGHT     6
+#define KEYBOARD_LOOK_LEFT      7
+#define KEYBOARD_LOOK_RIGHT     8
 
-// Pinout
-const byte SONIC_TRIG = 7;
-const byte SONIC_ECHO = 8;
-const byte SERVO = 9;
-const byte RIGHT_MOTOR = 10;
-const byte LEFT_MOTOR = 11;
+// DC motors' pinout on the L294DNE DIP package
+const byte LEFT_MOTOR_ENABLE_2 = 3;
+const byte LEFT_MOTOR_INPUT_3 = 4;
+const byte LEFT_MOTOR_INPUT_4 = 2;
+const byte RIGHT_MOTOR_ENABLE_1 = 9;
+const byte RIGHT_MOTOR_INPUT_1 = 8;
+const byte RIGHT_MOTOR_INPUT_2 = 10;
 
-// constants
-const unsigned int BAUD_RATE = 9600;
-const byte POWER = 191;
-const unsigned int WAIT_TIME = 100;
+// global constants
+const int BAUD_RATE = 9600;
+const byte MOTOR_HIGH_POWER = 255;
+const byte MOTOR_LOW_POWER = 127;
+const int MOTOR_DURATION = 10;
 
 // global variables
-byte input_int = 0;
-byte output_int = 0;
+byte from_master = 0;
+byte to_master = 0;
 
 void setup() {
     // set modes for pins
-    pinMode(SONIC_TRIG, OUTPUT);
-    pinMode(SONIC_ECHO, INPUT);
-    pinMode(SERVO, OUTPUT);
-    pinMode(RIGHT_MOTOR, OUTPUT);
-    pinMode(LEFT_MOTOR, OUTPUT);
+    pinMode(LEFT_MOTOR_ENABLE_2, OUTPUT);
+    pinMode(LEFT_MOTOR_INPUT_3, OUTPUT);
+    pinMode(LEFT_MOTOR_INPUT_4, OUTPUT);
+    pinMode(RIGHT_MOTOR_ENABLE_1, OUTPUT);
+    pinMode(RIGHT_MOTOR_INPUT_1, OUTPUT);
+    pinMode(RIGHT_MOTOR_INPUT_2, OUTPUT);
 
     // start the serial monitor
     Serial.begin(BAUD_RATE);
 
-    // initialize i2c as slave
+    // initialize i2c communication and set Arduino as the slave
     Wire.begin(SLAVE_ADDRESS);
 
     // define callbacks for i2c communication
-    Wire.onReceive(ReceiveData);
-    Wire.onRequest(SendData);
-
-    Serial.println("Slave is ready.");
+    Wire.onReceive(ReceiveI2C);
+    Wire.onRequest(SendI2C);
 }
 
 void loop() {
-    if (input_int == KEYBOARD_STOP) {
-        Stop();
-        Serial.println("Motors are stopped.");
-        output_int = KEYBOARD_STOP;
-    } else if (input_int == KEYBOARD_W) {
-        MoveForward();
-        Serial.println("Moving forward.");
-        output_int = KEYBOARD_W;
-    } else if (input_int == KEYBOARD_A) {
-        TurnLeft();
-        Serial.println("Turning left.");
-        output_int = KEYBOARD_A;
-    } else if (input_int == KEYBOARD_S) {
-        MoveBackward();
-        Serial.println("Moving backward.");
-        output_int = KEYBOARD_S;
-    } else if (input_int == KEYBOARD_D) {
-        TurnRight();
-        Serial.println("Turning right.");
-        output_int = KEYBOARD_D;
+    int duration = 0;
+
+    // make the robot move based on the keyboard input
+    while (duration < MOTOR_DURATION) {
+        Serial.print("    Duration = ");
+        Serial.println(duration);
+        if (from_master == KEYBOARD_FORWARD) {
+            MoveForward();
+        } else if (from_master == KEYBOARD_STEER_LEFT) {
+            SteerLeft();
+        } else if (from_master == KEYBOARD_BACKWARD) {
+            MoveBackWard();
+        } else if (from_master == KEYBOARD_STEER_RIGHT) {
+            SteerRight();
+        } else if (from_master == KEYBOARD_TURN_LEFT) {
+            TurnLeft();
+        } else if (from_master == KEYBOARD_TURN_RIGHT) {
+            TurnRight();
+        } else if (from_master == KEYBOARD_LOOK_LEFT) {
+            LookLeft();
+        } else if (from_master == KEYBOARD_LOOK_RIGHT) {
+            LookRight();
+        } else {
+            Stop();
+        }
+        duration++;
     }
 }
 
-// callback for received data
-void ReceiveData(int num_bytes) {
-    num_bytes = 0;
-
+/**
+ * Callback for receiving data
+ */
+void ReceiveI2C(int byte_count) {
+    // read data when available
     while (Wire.available()) {
-        input_int = Wire.read();
+        // read from master
+        from_master = Wire.read();
+
+        // display the input on the serial monitor
         Serial.print("Received from master: ");
-        Serial.println(input_int);
-        num_bytes++;
+        Serial.println(from_master);
     }
 }
 
-// callback for sending data
-void SendData(void) {
-    Wire.write(output_int);
+/**
+ * Callback for sending data
+ */
+void SendI2C(void) {
+    // write to master
+    Wire.write(to_master);
+
+    // display the output on the serial monitor
+    Serial.print("Sent to master: ");
+    Serial.println(to_master);
 }
+
+/**
+ * Sets both motors to rotate forward with the same power. Moves the robot
+ * forward.
+ */
+void MoveForward(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, HIGH);
+    digitalWrite(LEFT_MOTOR_INPUT_4, LOW);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_HIGH_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, HIGH);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, LOW);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_HIGH_POWER);
+}
+
+/**
+ * Sets both motors to rotate backward with the same power. Moves the robot
+ * backward.
+ */
+void MoveBackWard(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, LOW);
+    digitalWrite(LEFT_MOTOR_INPUT_4, HIGH);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_HIGH_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, LOW);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, HIGH);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_HIGH_POWER);
+}
+
+/**
+ * Sets both motors to rotate forward, but provides the left motor with less
+ * power than the right motor. Steers the robot to the left.
+ */
+void SteerLeft(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, HIGH);
+    digitalWrite(LEFT_MOTOR_INPUT_4, LOW);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_LOW_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, HIGH);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, LOW);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_HIGH_POWER);
+}
+
+/**
+ * Sets both motors to rotate forward, but provides the right motor with less
+ * power than the left motor. Steers the robot to the right.
+ */
+void SteerRight(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, HIGH);
+    digitalWrite(LEFT_MOTOR_INPUT_4, LOW);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_HIGH_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, HIGH);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, LOW);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_LOW_POWER);
+}
+
+/**
+ * Sets left motor to rotate backward and right motor to rotate forward with the
+ * same power. Turns the robot to the left.
+ */
+void TurnLeft(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, LOW);
+    digitalWrite(LEFT_MOTOR_INPUT_4, HIGH);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_HIGH_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, HIGH);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, LOW);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_HIGH_POWER);
+}
+
+/**
+ * Sets left motor to rotate forward and right motor to rotate backward with the
+ * same power. Turns the robot to the right.
+ */
+void TurnRight(void) {
+    digitalWrite(LEFT_MOTOR_INPUT_3, HIGH);
+    digitalWrite(LEFT_MOTOR_INPUT_4, LOW);
+    analogWrite(LEFT_MOTOR_ENABLE_2, MOTOR_HIGH_POWER);
+    digitalWrite(RIGHT_MOTOR_INPUT_1, LOW);
+    digitalWrite(RIGHT_MOTOR_INPUT_2, HIGH);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, MOTOR_HIGH_POWER);
+}
+
+/**
+ * Rotates the servo a numer of degrees to the left.
+ */
+void LookLeft(void) {}
+
+/**
+ * Rotates the servo a number of degrees to the right.
+ */
+void LookRight(void) {}
 
 void Stop(void) {
-    analogWrite(RIGHT_MOTOR, 0);
-    analogWrite(LEFT_MOTOR, 0);
-}
-
-void MoveForward(void) {
-    Stop();
-    delay(WAIT_TIME);
-    analogWrite(RIGHT_MOTOR, POWER);
-    analogWrite(LEFT_MOTOR, POWER);
-}
-
-void MoveBackward(void) {
-    Stop();
-    delay(WAIT_TIME);
-    analogWrite(RIGHT_MOTOR, -POWER);
-    analogWrite(LEFT_MOTOR, -POWER);
-}
-
-void TurnLeft(void) {
-    Stop();
-    delay(WAIT_TIME);
-    analogWrite(RIGHT_MOTOR, POWER);
-    analogWrite(LEFT_MOTOR, -POWER);
-}
-
-void TurnRight(void) {
-    Stop();
-    delay(WAIT_TIME);
-    analogWrite(RIGHT_MOTOR, -POWER);
-    analogWrite(LEFT_MOTOR, POWER);
+    analogWrite(LEFT_MOTOR_ENABLE_2, 0);
+    analogWrite(RIGHT_MOTOR_ENABLE_1, 0);
 }

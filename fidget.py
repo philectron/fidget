@@ -7,14 +7,12 @@
 
 @section  DESCRIPTION
 
-This robot is a computer keyboard controlled robot which can run, turn a
-camera, and avoid obstacles. This robot is inspired by and has the same
-chassis as the GoPiGo robot of Dexter Industries.
+This robot is a  keyboard-controlled robot that is capable of running on
+wheels, recording videos, and avoiding obstacles.
 
 This program is the "master" end of the I2C connection between a Raspberry
-Pi and an Arduino UNO. It helps connect the robot with the computer through
-Wi-Fi. It also transmits keyboard inputs into signal throughout the I2C
-connection.
+Pi and an Arduino UNO. It connects the robot with the computer through
+Wi-Fi and transmits keyboard inputs to the Arduino through I2C connection.
 """
 
 import sys
@@ -79,7 +77,7 @@ def i2c_read():
     Returns:
         An integer read from the slave.
     """
-    data = i2c.read_byte_data(SLAVE_ADDRESS, 1)
+    data = i2c.read_byte(SLAVE_ADDRESS)
 
     return data
 
@@ -91,48 +89,45 @@ def print_instruction():
     Returns nothing.
     """
     print('Program is running.\n')
-    print('Press W to move forward.')
-    print('Press A to turn left.')
-    print('Press S to move backward.')
-    print('Press D to turn right.')
-    print('Press Q to rotate camera to the left.')
-    print('Press E to rotate camera to the right.\n')
+    print('W = move forward')
+    print('S = move backward')
+    print('A = steer left')
+    print('D = steer right')
+    print('Q = turn camera left')
+    print('E = turn camera right')
+    print('X = exit\n')
 
 
 """main"""
 try:
     print_instruction()
     # camera.start_preview()
-    # a list of valid keys for the robot
-    VALID_KEYS = 'wasdqeWASDQE'
-    # convert keyboard input to a number
-    KEY_TO_INT = {'w': 1, 'a': 2, 's': 3, 'd': 4, 'q': 5, 'e': 6}
-    # convert number to a feedback from slave
-    INT_TO_KEY = [
-        'STOPPED.', 'MOVING FORWARD.', 'TURNING LEFT.',
-        'MOVING BACKWARD.', 'TURNING RIGHT.'
-    ]
+    # map available keys, each to a unique number
+    KEYMAP = {' ': 0, 'w': 1, 'a': 2, 's': 3, 'd': 4,
+              'z': 5, 'c': 6, 'q': 7, 'e': 8}
 
     while True:
-        # init and get input from keyboard
-        user_input = get_keyboard_input()
+        # get input from keyboard
+        keypress = get_keyboard_input().lower()[0]
 
-        # convert from user's input (string) to an integer
-        if (user_input in VALID_KEYS) and (len(user_input) == 1):
-            user_input = user_input.lower()
-            input_int = KEY_TO_INT[user_input]
-        else:
-            input_int = 0
+        # raise KeyboardInterrupt if press x
+        if keypress == 'x':
+            raise KeyboardInterrupt
 
-        # write the corresponding integer to the slave
-        i2c_write(input_int)
-        print('%d has been written to slave.' % (input_int))
+        # if the key pressed is in the list of keys
+        if keypress in KEYMAP.keys():
+            # map the key to a number
+            to_slave = KEYMAP[keypress]
+            # send the number to the slave
+            i2c_write(to_slave)
+            print('Sent to slave: %d' % (to_slave))
 
-        # cool down
-        time.sleep(1)
+        # read status from slave
+        from_slave = i2c_read()
 
-        # read status from the slave
-        print('Has just read from slave: ' + INT_TO_KEY[i2c_read()])
+        if from_slave in KEYMAP.values():
+            print('Received from slave: %d' % (from_slave))
+
 except KeyboardInterrupt:
     # camera.stop_preview()
-    print('\nProgram has been terminated.')
+    print('\nProgram is terminated.')
